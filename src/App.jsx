@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function getRandomScore() {
@@ -20,6 +20,53 @@ function getRandomComment() {
 function getRandomEmoji() {
   const emojis = ["🎉", "😂", "🥳", "😜", "🤪", "😎", "🤡", "👻", "🦄", "🌈", "💯", "🔥"];
   return emojis[Math.floor(Math.random() * emojis.length)];
+}
+
+// 鼠标跟随粒子组件
+function MouseParticles() {
+  const [particles, setParticles] = useState([]);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+      // 随机生成粒子
+      if (Math.random() > 0.7) {
+        setParticles(prev => [...prev.slice(-5), {
+          id: Date.now(),
+          x: e.clientX,
+          y: e.clientY,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`
+        }]);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setParticles(prev => prev.filter(p => Date.now() - p.id < 1000));
+    }, 100);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="mouse-particles">
+      {particles.map(particle => (
+        <div
+          key={particle.id}
+          className="particle"
+          style={{
+            left: particle.x,
+            top: particle.y,
+            backgroundColor: particle.color
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 // 简单烟花动画组件
@@ -46,6 +93,29 @@ function Confetti({ show }) {
   );
 }
 
+// 打字机效果组件
+function TypewriterText({ text, speed = 100 }) {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, speed);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, text, speed]);
+
+  useEffect(() => {
+    setDisplayText('');
+    setCurrentIndex(0);
+  }, [text]);
+
+  return <span>{displayText}<span className="cursor">|</span></span>;
+}
+
 function App() {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
@@ -67,10 +137,18 @@ function App() {
   const [shareAnim, setShareAnim] = useState(false);
   const [clickCount, setClickCount] = useState(0); // 隐藏点击计数器
   const [showTips, setShowTips] = useState(false); // 提示信息
+  const [pageLoaded, setPageLoaded] = useState(false); // 页面加载状态
+  const [buttonRipple, setButtonRipple] = useState(null); // 按钮波纹效果
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // 页面加载动画
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoaded(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 键盘快捷键支持
   useEffect(() => {
@@ -102,8 +180,30 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  // 按钮波纹效果
+  const createRipple = (event) => {
+    const button = event.currentTarget;
+    const ripple = document.createElement('span');
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    ripple.classList.add('ripple');
+    
+    button.appendChild(ripple);
+    
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    createRipple(e);
     setLoading(true);
     setResult(null);
     setShowPrank(false);
@@ -164,8 +264,9 @@ function App() {
   };
 
   // 分享按钮功能
-  const handleShare = () => {
+  const handleShare = (e) => {
     if (!result) return;
+    createRipple(e);
     const text = `姓名：${result.name}\n准考证号：${result.id}\n分数：${result.score}\n评语：${result.comment}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -207,7 +308,8 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className={`container ${pageLoaded ? 'loaded' : ''}`}>
+      <MouseParticles />
       {/* 主题切换按钮 */}
       <div className="theme-toggle" onClick={handleThemeToggle} title="切换深浅色 (Ctrl+T)">
         {theme === 'light' ? '🌙' : '☀️'}
@@ -221,7 +323,9 @@ function App() {
           <div className="color-spinner"></div>
         </div>
       )}
-      <h1 onClick={handleHiddenClick} style={{cursor: 'pointer'}}>内蒙古地生会考分数查询</h1>
+      <h1 onClick={handleHiddenClick} style={{cursor: 'pointer'}}>
+        <TypewriterText text="内蒙古地生会考分数查询" speed={150} />
+      </h1>
       <form onSubmit={handleSubmit} className="query-form">
         <input
           type="text"
@@ -229,6 +333,7 @@ function App() {
           value={name}
           onChange={e => setName(e.target.value)}
           required
+          className="input-animate"
         />
         <input
           type="text"
@@ -236,8 +341,9 @@ function App() {
           value={id}
           onChange={e => setId(e.target.value)}
           required
+          className="input-animate"
         />
-        <button type="submit" className={loading ? "loading" : ""} disabled={loading}>
+        <button type="submit" className={`submit-btn ${loading ? "loading" : ""}`} disabled={loading}>
           {loading && <span className="spinner"></span>}
           {loading ? "查询中..." : "查询分数 (Ctrl+Enter)"}
         </button>
@@ -263,7 +369,7 @@ function App() {
           <div className="prank-content">
             <h2>哈哈哈！</h2>
             <p style={{fontSize: "1.2rem", margin: "16px 0"}}>你被骗啦！<br />本网站是整蛊用的，分数是随机生成的，请勿当真！</p>
-            <button onClick={() => setShowPrank(false)}>我知道了</button>
+            <button onClick={(e) => { createRipple(e); setShowPrank(false); }}>我知道了</button>
           </div>
         </div>
       )}
@@ -292,7 +398,7 @@ function App() {
               本网站仅供娱乐整蛊，所有分数均为随机生成，请勿当真！<br />如有不适，请及时关闭页面。<br />
               <span style={{fontSize: "0.9rem", color: "#888"}}>© 2024 NMGS Prank</span>
             </div>
-            <button className="disclaimer-close" onClick={() => setShowDisclaimerModal(false)}>我知道了</button>
+            <button className="disclaimer-close" onClick={(e) => { createRipple(e); setShowDisclaimerModal(false); }}>我知道了</button>
           </div>
         </div>
       )}

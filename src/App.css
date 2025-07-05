@@ -115,6 +115,13 @@ body, html {
   border-radius: 18px;
   box-shadow: 0 8px 32px #0002, 0 1.5px 8px #1976d222;
   text-align: center;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(.4,0,.2,1);
+}
+.container.loaded {
+  opacity: 1;
+  transform: translateY(0);
 }
 h1, h2, p, .result, .prank-content {
   text-align: center;
@@ -125,6 +132,11 @@ h1 {
   font-size: 1.7rem;
   color: #1976d2;
   margin-bottom: 18px;
+}
+h1:hover {
+  transform: scale(1.02);
+  text-shadow: 0 0 10px #1976d288;
+  transition: all 0.3s ease;
 }
 .query-form input {
   width: 100%;
@@ -137,10 +149,13 @@ h1 {
   transition: border-color 0.3s, box-shadow 0.3s;
   font-family: inherit;
 }
-.query-form input:focus {
-  border-color: #1976d2;
-  box-shadow: 0 0 6px #1976d288;
-  outline: none;
+.input-animate {
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  transform: translateX(0);
+}
+.input-animate:focus {
+  transform: translateX(5px);
+  box-shadow: 0 0 15px #1976d288;
 }
 .query-form button {
   width: 100%;
@@ -159,6 +174,24 @@ h1 {
   font-weight: bold;
   letter-spacing: 1px;
   box-shadow: 0 2px 8px #1976d222;
+}
+.submit-btn, .share-btn, .disclaimer-close, .prank-content button {
+  position: relative;
+  overflow: hidden;
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 .query-form button:active {
   background: linear-gradient(90deg, #125ea8 60%, #64b5f6 100%);
@@ -213,6 +246,11 @@ h1 {
   text-align: center;
   box-shadow: 0 2px 8px #1976d211;
 }
+.result:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px #1976d233;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
@@ -237,6 +275,10 @@ h1 {
   box-shadow: 0 4px 24px #0002;
   max-width: 90vw;
   animation: popIn 0.5s cubic-bezier(.4,0,.2,1);
+}
+.prank-content:hover {
+  transform: scale(1.02);
+  transition: all 0.3s ease;
 }
 @keyframes popIn {
   0% { opacity: 0; transform: scale(0.7) rotate(-8deg); }
@@ -277,6 +319,16 @@ h1 {
   .query-form input, .query-form button {
     font-size: 15px;
     padding: 10px;
+  }
+  .container.loaded {
+    transform: translateY(0) scale(1);
+  }
+  .particle {
+    width: 3px;
+    height: 3px;
+  }
+  .input-animate:focus {
+    transform: translateX(3px);
   }
 }
 .loading-overlay {
@@ -393,6 +445,10 @@ h1 {
   max-width: 90vw;
   min-width: 240px;
   animation: popIn 0.5s cubic-bezier(.4,0,.2,1);
+}
+.disclaimer-content:hover {
+  transform: scale(1.02);
+  transition: all 0.3s ease;
 }
 .disclaimer-icon-animate {
   font-size: 2.5rem;
@@ -537,4 +593,73 @@ h1 {
 }
 [data-theme='dark'] .tips-content p {
   color: #ccc;
+}
+
+/* 鼠标跟随粒子 */
+.mouse-particles {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: particle-fade 1s ease-out forwards;
+  transform: translate(-50%, -50%);
+}
+@keyframes particle-fade {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+}
+
+/* 打字机效果 */
+.cursor {
+  animation: blink 1s infinite;
+  color: #1976d2;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 按钮悬停动画增强 */
+.submit-btn:hover, .share-btn:hover {
+  transform: scale(1.05) rotate(-2deg);
+  box-shadow: 0 8px 25px #1976d244;
+}
+.submit-btn:active, .share-btn:active {
+  transform: scale(0.98) rotate(1deg);
+}
+
+/* 浮动按钮悬停增强 */
+.theme-toggle:hover, .tips-btn:hover, .disclaimer-fab:hover {
+  transform: scale(1.15) rotate(-12deg);
+  box-shadow: 0 8px 25px #1976d266;
+}
+
+/* 结果卡片悬停效果 */
+.result:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px #1976d233;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+/* 弹窗内容悬停效果 */
+.prank-content:hover, .disclaimer-content:hover {
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+/* 深色主题下的特殊效果 */
+[data-theme='dark'] .particle {
+  box-shadow: 0 0 8px currentColor;
+}
+[data-theme='dark'] .cursor {
+  color: #90caf9;
+}
+[data-theme='dark'] h1:hover {
+  text-shadow: 0 0 10px #90caf988;
 }
