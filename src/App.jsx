@@ -34,6 +34,18 @@ function Fireworks({ show }) {
   );
 }
 
+// 彩带动画组件
+function Confetti({ show }) {
+  if (!show) return null;
+  return (
+    <div className="confetti">
+      {[...Array(50)].map((_, i) => (
+        <div key={i} className={`confetti-piece c${i % 5 + 1}`}></div>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
@@ -44,6 +56,7 @@ function App() {
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [egg, setEgg] = useState(null); // 彩蛋内容
   const [showFireworks, setShowFireworks] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [theme, setTheme] = useState(() => {
     // 默认跟随系统
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -52,10 +65,38 @@ function App() {
     return 'light';
   });
   const [shareAnim, setShareAnim] = useState(false);
+  const [clickCount, setClickCount] = useState(0); // 隐藏点击计数器
+  const [showTips, setShowTips] = useState(false); // 提示信息
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // 键盘快捷键支持
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Ctrl/Cmd + Enter 提交表单
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (name && id && !loading) {
+          handleSubmit(e);
+        }
+      }
+      // Ctrl/Cmd + T 切换主题
+      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        e.preventDefault();
+        handleThemeToggle();
+      }
+      // Ctrl/Cmd + S 显示分享
+      if ((e.ctrlKey || e.metaKey) && e.key === 's' && result) {
+        e.preventDefault();
+        handleShare();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [name, id, loading, result]);
 
   const handleThemeToggle = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
@@ -68,25 +109,56 @@ function App() {
     setShowPrank(false);
     setEgg(null);
     setShowFireworks(false);
+    setShowConfetti(false);
     setTimeout(() => {
       let score = getRandomScore();
       let comment = getRandomComment();
       let emoji = getRandomEmoji();
       let egg = null;
       let triggerFireworks = false;
+      let triggerConfetti = false;
+      
       // 特殊输入彩蛋
-      if (name.trim() === "666" || id.trim() === "666" || name.includes("彩蛋")) {
+      const nameLower = name.trim().toLowerCase();
+      const idLower = id.trim().toLowerCase();
+      
+      if (nameLower === "666" || idLower === "666" || nameLower.includes("彩蛋")) {
         score = 100;
         comment = "你触发了隐藏彩蛋！666！";
         emoji = "🥚";
         egg = "恭喜你发现了隐藏彩蛋！";
         triggerFireworks = true;
+      } else if (nameLower === "满分" || nameLower === "100") {
+        score = 100;
+        comment = "满分！你是地生之王！";
+        emoji = "👑";
+        egg = "满分彩蛋！";
+        triggerConfetti = true;
+      } else if (nameLower === "零分" || nameLower === "0") {
+        score = 0;
+        comment = "零分！别灰心，继续努力！";
+        emoji = "😭";
+        egg = "零分彩蛋！";
+      } else if (nameLower.includes("老师") || nameLower.includes("teacher")) {
+        score = 95;
+        comment = "老师好！您辛苦了！";
+        emoji = "👨‍🏫";
+        egg = "老师彩蛋！";
+      } else if (nameLower === "admin" || nameLower === "管理员") {
+        score = 999;
+        comment = "管理员模式！";
+        emoji = "⚡";
+        egg = "管理员彩蛋！";
+        triggerFireworks = true;
+        triggerConfetti = true;
       }
+      
       setResult({ name, id, score, comment });
       setEmoji(emoji);
       setEgg(egg);
       setLoading(false);
       setShowFireworks(triggerFireworks);
+      setShowConfetti(triggerConfetti);
       setTimeout(() => setShowPrank(true), 2000);
     }, 1200);
   };
@@ -101,6 +173,24 @@ function App() {
     setShareAnim(true);
     setTimeout(() => setShareAnim(false), 800);
     alert("分数信息已复制，可粘贴到微信/QQ等处分享！");
+  };
+
+  // 隐藏点击彩蛋
+  const handleHiddenClick = () => {
+    setClickCount(prev => {
+      const newCount = prev + 1;
+      if (newCount === 5) {
+        alert("🎉 你发现了隐藏点击彩蛋！点击了5次！");
+        return 0;
+      }
+      return newCount;
+    });
+  };
+
+  // 显示快捷键提示
+  const handleShowTips = () => {
+    setShowTips(true);
+    setTimeout(() => setShowTips(false), 3000);
   };
 
   // 弹窗点击遮罩关闭
@@ -119,15 +209,19 @@ function App() {
   return (
     <div className="container">
       {/* 主题切换按钮 */}
-      <div className="theme-toggle" onClick={handleThemeToggle} title="切换深浅色">
+      <div className="theme-toggle" onClick={handleThemeToggle} title="切换深浅色 (Ctrl+T)">
         {theme === 'light' ? '🌙' : '☀️'}
+      </div>
+      {/* 快捷键提示按钮 */}
+      <div className="tips-btn" onClick={handleShowTips} title="快捷键提示">
+        ⌨️
       </div>
       {loading && (
         <div className="loading-overlay">
           <div className="color-spinner"></div>
         </div>
       )}
-      <h1>内蒙古地生会考分数查询</h1>
+      <h1 onClick={handleHiddenClick} style={{cursor: 'pointer'}}>内蒙古地生会考分数查询</h1>
       <form onSubmit={handleSubmit} className="query-form">
         <input
           type="text"
@@ -145,12 +239,13 @@ function App() {
         />
         <button type="submit" className={loading ? "loading" : ""} disabled={loading}>
           {loading && <span className="spinner"></span>}
-          {loading ? "查询中..." : "查询分数"}
+          {loading ? "查询中..." : "查询分数 (Ctrl+Enter)"}
         </button>
       </form>
       {result && (
         <div className="result egg-animate">
           <Fireworks show={showFireworks} />
+          <Confetti show={showConfetti} />
           <div style={{fontSize: "2.2rem", marginBottom: 8}}>{emoji}</div>
           <h2>查询结果</h2>
           <p>姓名：{result.name}</p>
@@ -159,7 +254,7 @@ function App() {
           <p>评语：{result.comment}</p>
           {egg && <div className="egg-hint">{egg}</div>}
           <button className={`share-btn${shareAnim ? ' share-anim' : ''}`} onClick={handleShare}>
-            <span role="img" aria-label="share">🔗</span> 分享
+            <span role="img" aria-label="share">🔗</span> 分享 (Ctrl+S)
           </button>
         </div>
       )}
@@ -169,6 +264,17 @@ function App() {
             <h2>哈哈哈！</h2>
             <p style={{fontSize: "1.2rem", margin: "16px 0"}}>你被骗啦！<br />本网站是整蛊用的，分数是随机生成的，请勿当真！</p>
             <button onClick={() => setShowPrank(false)}>我知道了</button>
+          </div>
+        </div>
+      )}
+      {/* 快捷键提示 */}
+      {showTips && (
+        <div className="tips-modal">
+          <div className="tips-content">
+            <h3>⌨️ 快捷键</h3>
+            <p>Ctrl+Enter: 查询分数</p>
+            <p>Ctrl+T: 切换主题</p>
+            <p>Ctrl+S: 分享结果</p>
           </div>
         </div>
       )}
