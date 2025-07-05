@@ -594,6 +594,22 @@ h1:hover {
 [data-theme='dark'] .tips-content p {
   color: #ccc;
 }
+@media (max-width: 600px) {
+  .tips-btn {
+    right: 70px;
+  }
+  .tips-modal {
+    right: 70px;
+  }
+}
+@media (max-width: 480px) {
+  .tips-btn {
+    right: 60px;
+  }
+  .tips-modal {
+    right: 60px;
+  }
+}
 
 /* 鼠标跟随粒子 */
 .mouse-particles {
